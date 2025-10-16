@@ -21,7 +21,7 @@ A Python-based recommendation system that fetches "good first issue" labeled iss
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/sukarxn/Github_issues_recommendation_sys.git
 cd Github_issues_recommendation_sys
 ```
 
