@@ -1,0 +1,5 @@
+I am a computer science student with strong skills in Python and web development. 
+I have experience with Django, Flask, and FastAPI frameworks. 
+I'm interested in contributing to open-source projects related to data science, machine learning, and API development.
+I'm comfortable with REST APIs, database design, and have basic knowledge of React for frontend work.
+I'm looking for beginner-friendly issues to get started with open-source contributions.
