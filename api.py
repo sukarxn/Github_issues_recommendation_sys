@@ -1,0 +1,28 @@
+from fastapi import FastAPI, Body
+from pydantic import BaseModel
+from typing import Optional
+from core import recommend_issues
+
+app = FastAPI(title="GitHub Issues Recommendation API")
+
+class RecommendRequest(BaseModel):
+    language: Optional[str] = "all"
+    per_page: Optional[int] = 20
+    top_n: Optional[int] = 100
+    student_profile: Optional[str] = None
+    model: Optional[str] = "all-MiniLM-L6-v2"
+
+@app.post("/recommend")
+def recommend(req: RecommendRequest):
+    issues = recommend_issues(
+        language=req.language,
+        per_page=req.per_page,
+        top_n=req.top_n,
+        student_profile=req.student_profile,
+        model_name=req.model,
+    )
+    return {"recommendations": issues}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

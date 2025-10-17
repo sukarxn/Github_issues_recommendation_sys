@@ -116,6 +116,52 @@ python main.py -n 10 -p "I'm a beginner developer interested in Python web frame
 python main.py -n 20
 ```
 
+## 🌐 REST API Usage
+
+This project exposes a REST API using FastAPI. You can run the API server and get recommendations via HTTP requests.
+
+### Start the API server
+
+```bash
+uvicorn api:app --reload
+```
+
+### API Endpoints
+
+#### POST /recommend
+- **Description:** Get recommended GitHub issues (optionally ranked by student profile)
+- **Request Body (JSON):**
+  - `language` (str, optional): Programming language filter (default: "all")
+  - `per_page` (int, optional): Number of issues to return (default: 20)
+  - `top_n` (int, optional): Number of top repositories to search (default: 100)
+  - `student_profile` (str, optional): Student profile text (optional)
+  - `model` (str, optional): Embedding model name (default: "all-MiniLM-L6-v2")
+- **Response:**
+  - `recommendations`: List of issues (with similarity score if profile provided)
+
+#### GET /health
+- **Description:** Health check endpoint
+- **Response:** `{ "status": "ok" }`
+
+### Example Request (with curl)
+
+```bash
+curl -X POST "http://127.0.0.1:8000/recommend" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "language": "python",
+    "per_page": 10,
+    "top_n": 30,
+    "student_profile": "I am a Python developer interested in web APIs and machine learning"
+  }'
+```
+
+### Interactive API Docs
+
+Once the server is running, visit:
+- Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
 ## 🏗️ Project Structure
 
 ```
