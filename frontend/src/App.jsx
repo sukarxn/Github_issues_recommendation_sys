@@ -14,10 +14,8 @@ function App() {
         },
         body: JSON.stringify({
           student_profile: profileDescription,
-          language: 'all',
           per_page: 20,
           top_n: 100,
-          model: 'all-MiniLM-L6-v2'
         })
       });
       

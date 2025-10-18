@@ -26,11 +26,9 @@ class RecommendRequest(BaseModel):
 @app.post("/recommend")
 def recommend(req: RecommendRequest):
     issues = recommend_issues(
-        language=req.language,
         per_page=req.per_page,
         top_n=req.top_n,
         student_profile=req.student_profile,
-        model_name=req.model,
     )
     return {"recommendations": jsonable_encoder(issues)}
 

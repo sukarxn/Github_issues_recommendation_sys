@@ -17,6 +17,44 @@ def _auth_headers() -> Dict[str, str]:
         headers["Authorization"] = f"Bearer {token}"
     return headers
 
+def extract_language_from_profile(profile_text: str) -> str:
+    """Extract programming language from student profile using keyword matching."""
+    if not profile_text:
+        return "all"
+    
+    profile_text = profile_text.lower()
+
+    #Define a list of popular programming languages
+    languages = {
+        'python': ['python', 'django', 'flask', 'fastapi', 'pytorch', 'tensorflow', 'pandas', 'numpy'],
+        'javascript': ['javascript', 'js', 'react', 'vue', 'angular', 'node.js', 'nodejs', 'express'],
+        'typescript': ['typescript', 'ts'],
+        'java': ['java', 'spring', 'spring boot', 'maven', 'gradle'],
+        'go': ['golang', 'go'],
+        'rust': ['rust'],
+        'ruby': ['ruby', 'rails', 'ruby on rails'],
+        'php': ['php', 'laravel', 'symfony'],
+        'c++': ['c++', 'cpp'],
+        'csharp': ['c#', 'csharp', '.net', 'dotnet', 'asp.net'],
+        'swift': ['swift', 'ios', 'swiftui'],
+        'kotlin': ['kotlin', 'android'],
+    }
+
+    # Count occurrences of each language keyword in the profile text
+    scores = {}
+    for lang, keywords in languages.items():
+        scores[lang] = sum(1 for kw in keywords if kw in profile_text)
+
+    # Store the language with the highest score
+    max_score = max(scores.values())
+    
+    # If no language keywords are found, return "all"
+    if max_score == 0:
+        return "all"
+    # Return the language with the highest score
+    return max(scores, key=scores.get)
+
+
 def fetch_top_repositories(language: Optional[str], top_n: int = 100) -> List[Tuple[str, str, int]]:
     url = "https://api.github.com/search/repositories"
     headers = _auth_headers()
@@ -122,7 +160,13 @@ def recommend_issues(
     student_profile: Optional[str] = None,
     model_name: str = 'all-MiniLM-L6-v2',
 ) -> List[Dict]:
+    
+    if student_profile and language == "all":
+        language = extract_language_from_profile(student_profile)
+        print(f"Detected programming language from profile: {language}")
+
     issues = fetch_github_issues(language, per_page, top_n)
+    
     if student_profile:
         model = create_embedding_model(model_name)
         issue_embeddings = generate_issue_embeddings(issues, model)
