@@ -1,11 +1,18 @@
 import requests
 from typing import List, Dict, Tuple, Optional
 import os
+import time
+import json
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
+import diskcache as dc
 
 load_dotenv()
+
+# Initialize disk cache
+cache = dc.Cache('/tmp/github_issues_cache')
+CACHE_TTL = 3600  # 1 hour in seconds
 
 def _auth_headers() -> Dict[str, str]:
     token = os.getenv("GITHUB_TOKEN")
@@ -108,6 +115,15 @@ def fetch_repo_good_first_issues(owner: str, repo: str, limit: int) -> List[Dict
     return issues
 
 def fetch_github_issues(language: str = "all", per_page: int = 20, top_n: int = 100) -> List[Dict]:
+    """Fetch GitHub issues with caching."""
+    
+    # Check cache first
+    cached_issues = get_cached_issues(language, top_n)
+    if cached_issues is not None:
+        return cached_issues
+    
+    # Fetch fresh issues from GitHub
+    print(f"🔄 Fetching fresh issues for language: {language}")
     token = os.getenv("GITHUB_TOKEN")
     if not token:
         orig = top_n
@@ -122,7 +138,13 @@ def fetch_github_issues(language: str = "all", per_page: int = 20, top_n: int = 
             remaining = per_page - len(all_issues)
             if remaining <= 0:
                 break
-    return all_issues[:per_page]
+    
+    issues = all_issues[:per_page]
+    
+    # Cache the results
+    set_cached_issues(language, top_n, issues)
+    
+    return issues
 
 def create_embedding_model(model_name: str = 'all-MiniLM-L6-v2') -> SentenceTransformer:
     return SentenceTransformer(model_name)
@@ -181,3 +203,45 @@ def recommend_issues(
         ]
     else:
         return issues
+
+def _get_cache_key(language: str, top_n: int) -> str:
+    """Generate a unique cache key for language and top_n."""
+    return f"issues_{language}_{top_n}"
+
+def _is_cache_expired(cache_key: str) -> bool:
+    """Check if cache entry has expired."""
+    try:
+        timestamp = cache.get(f"{cache_key}_timestamp")
+        if timestamp is None:
+            return True
+        return time.time() - timestamp > CACHE_TTL
+    except:
+        return True
+
+def get_cached_issues(language: str, top_n: int) -> Optional[List[Dict]]:
+    """Retrieve cached issues if available and not expired."""
+    cache_key = _get_cache_key(language, top_n)
+    
+    if _is_cache_expired(cache_key):
+        return None
+    
+    try:
+        issues = cache.get(cache_key)
+        if issues:
+            print(f"✅ Using cached issues for language: {language}, top_n: {top_n}")
+            return issues
+    except:
+        pass
+    
+    return None
+
+def set_cached_issues(language: str, top_n: int, issues: List[Dict]) -> None:
+    """Cache issues with timestamp."""
+    cache_key = _get_cache_key(language, top_n)
+    
+    try:
+        cache.set(cache_key, issues)
+        cache.set(f"{cache_key}_timestamp", time.time())
+        print(f"💾 Cached {len(issues)} issues for language: {language}, top_n: {top_n}")
+    except Exception as e:
+        print(f"⚠️ Failed to cache issues: {e}")

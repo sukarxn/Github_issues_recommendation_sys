@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Body
 from pydantic import BaseModel
 from typing import Optional
-from core import recommend_issues
+from core import recommend_issues, cache
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 
@@ -35,3 +35,23 @@ def recommend(req: RecommendRequest):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.delete("/cache/clear")
+def clear_cache():
+    """Clear all cached issues."""
+    try:
+        cache.clear()
+        return {"status": "Cache cleared successfully"}
+    except Exception as e:
+        return {"status": "Failed to clear cache", "error": str(e)}
+
+@app.get("/cache/stats")
+def cache_stats():
+    """Get cache statistics."""
+    try:
+        return {
+            "cache_size": len(cache),
+            "cache_location": "/tmp/github_issues_cache"
+        }
+    except Exception as e:
+        return {"error": str(e)}
