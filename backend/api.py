@@ -2,8 +2,19 @@ from fastapi import FastAPI, Body
 from pydantic import BaseModel
 from typing import Optional
 from core import recommend_issues
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+
 
 app = FastAPI(title="GitHub Issues Recommendation API")
+
+app.middleware(
+    CORSMiddleware,
+    allow_origins=["http:localhost:*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class RecommendRequest(BaseModel):
     language: Optional[str] = "all"
@@ -21,7 +32,7 @@ def recommend(req: RecommendRequest):
         student_profile=req.student_profile,
         model_name=req.model,
     )
-    return {"recommendations": issues}
+    return {"recommendations": jsonable_encoder(issues)}
 
 @app.get("/health")
 def health():
