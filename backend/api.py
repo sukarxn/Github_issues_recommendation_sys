@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Body
 from pydantic import BaseModel
 from typing import Optional
-from core import recommend_issues, cache
+from core import recommend_issues, cache, clear_profile_embeddings_cache, clear_reference_embeddings_cache
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 
@@ -38,19 +38,43 @@ def health():
 
 @app.delete("/cache/clear")
 def clear_cache():
-    """Clear all cached issues."""
+    """Clear all cached data (issues and profile embeddings)."""
     try:
         cache.clear()
-        return {"status": "Cache cleared successfully"}
+        return {"status": "All cache cleared successfully"}
     except Exception as e:
         return {"status": "Failed to clear cache", "error": str(e)}
 
+@app.delete("/cache/clear-profiles")
+def clear_profile_cache():
+    """Clear only cached profile embeddings."""
+    try:
+        clear_profile_embeddings_cache()
+        return {"status": "Profile embeddings cache cleared successfully"}
+    except Exception as e:
+        return {"status": "Failed to clear profile cache", "error": str(e)}
+
+@app.delete("/cache/clear-references")
+def clear_reference_cache():
+    """Clear only cached reference embeddings."""
+    try:
+        clear_reference_embeddings_cache()
+        return {"status": "Reference embeddings cache cleared successfully"}
+    except Exception as e:
+        return {"status": "Failed to clear reference cache", "error": str(e)}
+
 @app.get("/cache/stats")
 def cache_stats():
-    """Get cache statistics."""
+    """Get detailed cache statistics."""
     try:
+        total_items = len(cache)
+        profile_items = len([k for k in cache.keys() if isinstance(k, str) and k.startswith("profile_embedding_")])
+        issue_items = len([k for k in cache.keys() if isinstance(k, str) and k.startswith("issues_")])
+        
         return {
-            "cache_size": len(cache),
+            "total_cache_size": total_items,
+            "profile_embeddings_cached": profile_items,
+            "issue_caches": issue_items,
             "cache_location": "/tmp/github_issues_cache"
         }
     except Exception as e:
