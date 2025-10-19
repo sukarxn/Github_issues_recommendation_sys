@@ -9,6 +9,8 @@ import numpy as np
 from sentence_transformers import SentenceTransformer, util
 from dotenv import load_dotenv
 import diskcache as dc
+from phi_predictor import predict_experience_level as phi_predict_experience
+from phi_predictor import predict_programming_language as phi_predict_language
 
 load_dotenv()
 
@@ -210,8 +212,18 @@ EXPERIENCE_LEVEL_LABELS = {
     ],
 }
 
-def extract_experience_level_embeddings(profile_text: str, model: SentenceTransformer) -> str:
-    """Extract experience level from student profile using embedding similarity with the reference examples."""
+def extract_experience_level_embeddings(profile_text: str, model: SentenceTransformer, use_phi: bool = False) -> str:
+    """
+    Extract experience level from student profile.
+    Args:
+        profile_text: The user's profile text
+        model: The SentenceTransformer model (used if use_phi is False)
+        use_phi: If True, use the Phi predictor instead of embeddings
+    Returns:
+        Experience level as string ('beginner', 'intermediate', 'advanced', or 'any')
+    """
+    if use_phi:
+        return phi_predict_experience(profile_text)
     if not profile_text: 
         return "any"
     
@@ -267,8 +279,17 @@ def _auth_headers() -> Dict[str, str]:
         headers["Authorization"] = f"Bearer {token}"
     return headers
 
-def extract_language_from_profile(profile_text: str) -> str:
-    """Extract programming language from student profile using keyword matching."""
+def extract_language_from_profile(profile_text: str, use_phi: bool = False) -> str:
+    """
+    Extract programming language from student profile.
+    Args:
+        profile_text: The user's profile text
+        use_phi: If True, use the Phi predictor instead of keyword matching
+    Returns:
+        Programming language as string
+    """
+    if use_phi:
+        return phi_predict_language(profile_text)
     if not profile_text:
         return "all"
     
@@ -423,6 +444,12 @@ def fetch_github_issues(
     return issues
 
 def create_embedding_model(model_name: str = 'all-MiniLM-L6-v2') -> SentenceTransformer:
+    """
+    Create a SentenceTransformer model for generating embeddings.
+    Supported models:
+    - 'all-MiniLM-L6-v2': Default, English-focused model
+    - 'intfloat/multilingual-e5-base': Multilingual model supporting 100+ languages
+    """
     return SentenceTransformer(model_name)
 
 def generate_issue_embeddings(issues: List[Dict], model: SentenceTransformer) -> np.ndarray:
@@ -593,6 +620,7 @@ def recommend_issues(
     top_n: int = 100,
     student_profile: Optional[str] = None,
     model_name: str = 'all-MiniLM-L6-v2',
+    use_phi: bool = True,
 ) -> List[Dict]:
     
     """Recommend GitHub issues based on student profile and experience level."""
@@ -600,12 +628,12 @@ def recommend_issues(
     
     # 1. Extract programming language from profile if needed
     if student_profile and language == "all":
-        language = extract_language_from_profile(student_profile)
+        language = extract_language_from_profile(student_profile, use_phi)
         print(f"Detected programming language from profile: {language}")
 
     # 2. Extract experience level from profile if needed
     if student_profile:
-        experience_level = extract_experience_level_embeddings(student_profile, model) # 'beginner', 'intermediate', 'advanced', or 'any'
+        experience_level = extract_experience_level_embeddings(student_profile, model, use_phi) # 'beginner', 'intermediate', 'advanced', or 'any'
         labels = EXPERIENCE_LEVEL_LABELS.get(experience_level, [])
         if labels:
             print(f"Found: {experience_level} with labels: {labels}")

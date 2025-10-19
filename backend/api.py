@@ -21,7 +21,8 @@ class RecommendRequest(BaseModel):
     per_page: Optional[int] = 20
     top_n: Optional[int] = 100
     student_profile: Optional[str] = None
-    model: Optional[str] = "all-MiniLM-L6-v2"
+    model: Optional[str] = "intfloat/multilingual-e5-base"
+    use_phi: Optional[bool] = False  # Whether to use Phi predictor instead of embeddings
 
 @app.post("/recommend")
 def recommend(req: RecommendRequest):
@@ -29,6 +30,8 @@ def recommend(req: RecommendRequest):
         per_page=req.per_page,
         top_n=req.top_n,
         student_profile=req.student_profile,
+        # model_name="",
+        use_phi=True,
     )
     return {"recommendations": jsonable_encoder(issues)}
 
